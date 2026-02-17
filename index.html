@@ -4,6 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>My Personal Hub</title>
+    
+    <!-- PWA Meta Tags for iOS -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="MyHub">
+    <!-- 关键：添加苹果触摸图标链接 -->
+    <link rel="apple-touch-icon" href="app-icon.png">
+
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons -->
@@ -263,12 +271,14 @@
                 {
                     "src": CONFIG.pwaIcon,
                     "sizes": "192x192",
-                    "type": "image/png"
+                    "type": "image/png",
+                    "purpose": "any"
                 },
                 {
                     "src": CONFIG.pwaIcon,
                     "sizes": "512x512",
-                    "type": "image/png"
+                    "type": "image/png",
+                    "purpose": "any"
                 }
             ]
         };
