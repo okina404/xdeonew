@@ -1,106 +1,558 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Deonysus | 守护锚点</title>
-    
-    <!-- PWA 配置 -->
-    <link rel="manifest" href="manifest.json">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Deonysus">
-    
-    <!-- 图标引用 -->
-    <link rel="apple-touch-icon" href="icon.png">
-    <link rel="icon" type="image/png" href="icon.png">
-    
-    <!-- 样式表 -->
-    <link rel="stylesheet" href="styles.css">
-    
-    <!-- 核心库 (Staticfile 国内源) -->
-    <script crossorigin src="https://cdn.staticfile.org/react/18.2.0/umd/react.production.min.js"></script>
-    <script crossorigin src="https://cdn.staticfile.org/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-    <script src="https://cdn.staticfile.org/babel-standalone/7.23.5/babel.min.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Tailwind 配置 -->
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        paper: '#FFFDF5',
-                        ink: '#4A4A4A',
-                        cream: '#FDF6E3',
-                        warm: { 100: '#FFF0D4', 200: '#FFE0A3', 300: '#FFCB70', 500: '#FF9F43', 600: '#E67E22' },
-                        sage: { 100: '#E8F5E9', 500: '#81C784', 600: '#66BB6A' },
-                        berry: { 100: '#FCE4EC', 500: '#F06292', 600: '#EC407A' },
-                        tomato: { 100: '#FFEBEE', 500: '#FF5252', 600: '#E53935' }
-                    },
-                    fontFamily: {
-                        rounded: ['"Nunito"', '"Quicksand"', '"Varela Round"', 'system-ui', 'rounded', '-apple-system', 'sans-serif'],
-                    },
-                    animation: {
-                        'breathe': 'breathe 4s ease-in-out infinite',
-                        'float': 'float 3s ease-in-out infinite',
-                    },
-                    keyframes: {
-                        breathe: {
-                            '0%, 100%': { transform: 'scale(1)', opacity: '0.95' },
-                            '50%': { transform: 'scale(1.02)', opacity: '1' },
-                        },
-                        float: {
-                            '0%, 100%': { transform: 'translateY(0)' },
-                            '50%': { transform: 'translateY(-3px)' },
-                        }
-                    }
-                }
-            }
-        }
-    </script>
-</head>
-<body class="font-rounded selection:bg-warm-200 bg-paper text-ink">
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { 
+  Droplets, 
+  Wind, 
+  Moon, 
+  Brain, 
+  Plus, 
+  Check, 
+  Trash2, 
+  Download, 
+  Upload, 
+  Play, 
+  Pause, 
+  Square, 
+  Home, 
+  Clock, 
+  Tag, 
+  ChevronLeft, 
+  ChevronRight, 
+  Calendar, 
+  Settings, 
+  X,
+  BarChart3,
+  RotateCcw
+} from 'lucide-react';
 
-    <div id="root"></div>
+// --- 1. 基础配置与常量 ---
+const STORAGE_KEY = 'deonysus_anchor_data_v1';
+const TIMER_STATE_KEY = 'deonysus_active_timer_v1';
+const SETTINGS_KEY = 'deonysus_settings_v1';
 
-    <!-- 错误捕捉 -->
-    <script>
-        window.onerror = function(message) {
-            if (message === 'Script error.') return;
-            
-            const root = document.getElementById('root');
-            // 只有当 root 是空的时候（说明页面崩了）才显示错误
-            if (root && root.innerHTML.trim() === "") {
-                root.innerHTML = `
-                    <div style="padding:20px;color:#E53935;text-align:center;font-family:sans-serif;">
-                        <h3 style="margin-bottom:10px;">🤕 遇到了一点小障碍</h3>
-                        <p style="font-size:12px;opacity:0.8;">请尝试刷新页面</p>
-                        <div style="margin-top:15px;background:#fff0f0;padding:10px;border-radius:8px;text-align:left;font-size:10px;border:1px solid #ffcdcd;word-break:break-all;">
-                            ${message}
-                        </div>
-                    </div>`;
-            }
-        };
-    </script>
+const COLOR_PALETTE = [
+  '#FF6B6B', '#54A0FF', '#1DD1A1', '#FECA57', '#5F27CD', 
+  '#FF9F43', '#48DBFB', '#8395A7', '#FF9FF3', '#00D2D3'
+];
 
-    <!-- 引入主逻辑 -->
-    <script type="text/babel" src="app.js"></script>
+const HABIT_CONFIG = {
+  water: { label: "💧 饮水守护", max: 8, desc: "≥300ml 对抗结石", type: "infinite", color: "bg-blue-100 text-blue-600" },
+  poop: { label: "💩 顺畅守护", max: 1, desc: "身体净化完成", type: "count", color: "bg-amber-100 text-amber-700" },
+  spine: { label: "🚶‍♀️ 脊柱活动", max: 2, desc: "上下午各一次拉伸", type: "count", color: "bg-green-100 text-green-700" },
+  sleep: { label: "🌙 睡前锚点", max: 1, desc: "23:00 前开始仪式", type: "count", color: "bg-indigo-100 text-indigo-600" },
+  impulse: { label: "🧠 冲动记录", max: 999, desc: "护甲：觉察与停顿", type: "infinite", color: "bg-rose-100 text-rose-600" }
+};
 
-    <!-- 启动 Service Worker (本地记忆库) -->
-    <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                // 注册 sw.js，赋予 App 离线能力和秒开速度
-                navigator.serviceWorker.register('./sw.js')
-                    .then(registration => {
-                        console.log('Deonysus: 记忆库已就绪', registration.scope);
-                    })
-                    .catch(error => {
-                        console.log('Deonysus: 记忆库加载失败', error);
-                    });
-            });
-        }
-    </script>
-</body>
-</html>
+// --- 2. 工具函数 ---
+const LocalDB = {
+  getAll: () => {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); } catch { return {}; }
+  },
+  saveAll: (data) => { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); },
+  getToday: (dateKey) => {
+    const all = LocalDB.getAll();
+    const day = all[dateKey] || { water: 0, poop: 0, spine: 0, sleep: 0, impulse: 0, timeLogs: [], impulseRecords: [] };
+    if (!day.timeLogs) day.timeLogs = [];
+    if (!day.impulseRecords) day.impulseRecords = [];
+    return day;
+  },
+  updateToday: (dateKey, newData) => {
+    const all = LocalDB.getAll();
+    all[dateKey] = { ...newData, lastUpdate: Date.now() };
+    LocalDB.saveAll(all);
+  },
+  getTimerState: () => {
+    try { return JSON.parse(localStorage.getItem(TIMER_STATE_KEY)); } catch { return null; }
+  },
+  saveTimerState: (state) => {
+    if (!state) localStorage.removeItem(TIMER_STATE_KEY);
+    else localStorage.setItem(TIMER_STATE_KEY, JSON.stringify(state));
+  },
+  getSettings: () => {
+    try { 
+      let settings = JSON.parse(localStorage.getItem(SETTINGS_KEY));
+      if (!settings) {
+        settings = { tags: [
+          { name: '工作', color: COLOR_PALETTE[0] },
+          { name: '学习', color: COLOR_PALETTE[1] },
+          { name: '阅读', color: COLOR_PALETTE[2] },
+          { name: '运动', color: COLOR_PALETTE[3] }
+        ]};
+      }
+      return settings;
+    } catch { 
+      return { tags: [{ name: '工作', color: COLOR_PALETTE[0] }] }; 
+    }
+  },
+  saveSettings: (settings) => {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+  }
+};
+
+const getShanghaiDate = () => {
+  return new Intl.DateTimeFormat('en-CA', { 
+    timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit', day: '2-digit' 
+  }).format(new Date());
+};
+
+const formatTimeHHMMSS = (seconds) => {
+  const h = Math.floor(seconds / 3600).toString().padStart(2, '0');
+  const m = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0');
+  const s = (seconds % 60).toString().padStart(2, '0');
+  return `${h}:${m}:${s}`;
+};
+
+const formatSmartDuration = (seconds) => {
+  const m = seconds / 60;
+  if (m < 60) return `${m.toFixed(1)}m`;
+  return `${(m / 60).toFixed(1)}h`;
+};
+
+// --- 3. 子组件 ---
+
+const HabitCard = ({ id, config, value, onIncrement, isNight }) => {
+  const isTargetReached = value >= config.max;
+  const isClickable = config.type === 'infinite' || !isTargetReached;
+  const percentage = Math.min((value / config.max) * 100, 100);
+
+  return (
+    <div 
+      onClick={isClickable ? onIncrement : undefined} 
+      className={`relative overflow-hidden rounded-3xl p-4 transition-all duration-300 select-none border-2 ${isClickable ? 'cursor-pointer active:scale-[0.98]' : 'cursor-default'} ${
+        isTargetReached ? 
+          (isNight ? 'bg-indigo-900/40 border-indigo-800 opacity-60' : 'bg-white border-orange-100 opacity-80') : 
+          (isNight ? 'bg-[#2a2a3e] border-[#3a3a4e] shadow-sm hover:border-indigo-400' : 'bg-white border-white shadow-sm hover:border-orange-100')
+      }`}
+    >
+      <div 
+        className={`absolute bottom-0 left-0 h-1 transition-all duration-500 rounded-r-full ${isNight ? 'bg-indigo-500' : 'bg-orange-300'}`} 
+        style={{ width: `${percentage}%`, opacity: isTargetReached ? 0 : 0.5 }} 
+      />
+      <div className="flex justify-between items-center relative z-10">
+        <div className="flex items-center gap-3">
+          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl shadow-sm ${
+            isNight ? 'bg-indigo-800/50 text-indigo-200' : config.color
+          }`}>
+            {config.label.split(' ')[0]}
+          </div>
+          <div>
+            <h3 className={`font-bold text-lg flex items-center gap-2 ${
+              isTargetReached ? (isNight ? 'text-indigo-400 line-through' : 'text-gray-400 line-through') : (isNight ? 'text-indigo-100' : 'text-gray-800')
+            }`}>
+              {config.label.split(' ')[1]} 
+              {isTargetReached && <Check size={18} className={isNight ? "text-indigo-400" : "text-orange-500"} />}
+            </h3>
+            <p className={`text-xs font-bold mt-0.5 ${isNight ? 'text-indigo-300/50' : 'text-gray-400'}`}>{config.desc}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="text-right">
+            <span className={`text-2xl font-bold font-mono ${
+              isTargetReached ? (isNight ? 'text-indigo-800' : 'text-orange-200') : (isNight ? 'text-indigo-300' : 'text-orange-600')
+            }`}>{value}</span>
+            <span className={`text-xs font-bold ${isNight ? 'text-indigo-800' : 'text-orange-200'}`}>/{config.max}</span>
+          </div>
+          <div className={`w-10 h-10 rounded-full flex items-center justify-center shadow-sm transition-all border-b-2 active:border-b-0 active:translate-y-0.5 ${
+            isTargetReached ? 
+              (config.type === 'infinite' ? (isNight ? 'bg-indigo-600 text-white border-indigo-700' : 'bg-orange-400 text-white border-orange-500') : (isNight ? 'bg-gray-800 text-gray-600 border-gray-700' : 'bg-gray-100 text-gray-300 border-gray-200')) : 
+              (isNight ? 'bg-indigo-900 text-indigo-300 border-indigo-800' : 'bg-orange-50 text-orange-600 border-orange-100')
+          }`}>
+            <Plus size={20} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const ImpulseModal = ({ onClose, onConfirm }) => {
+  const [note, setNote] = useState('');
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose}></div>
+      <div className="bg-white w-full max-w-xs rounded-3xl shadow-2xl relative z-10 p-5 border-4 border-pink-100 animate-in zoom-in duration-200">
+        <h3 className="text-lg font-bold text-gray-800 mb-1">接住你了</h3>
+        <p className="text-xs text-gray-400 mb-4 font-bold">告诉我，发生了什么？（不想说也没关系）</p>
+        <textarea 
+          className="w-full bg-gray-50 border border-gray-100 rounded-xl p-3 text-sm outline-none focus:border-pink-300 focus:ring-2 focus:ring-pink-50 transition-all mb-4 h-24 resize-none"
+          placeholder="比如：焦虑、无聊、牙痒痒..."
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          autoFocus
+        />
+        <div className="flex gap-2">
+          <button onClick={() => onConfirm('')} className="flex-1 py-3 text-pink-400 bg-white border border-pink-100 rounded-xl font-bold text-xs">只记数字</button>
+          <button onClick={() => onConfirm(note)} className="flex-[2] py-3 text-white bg-pink-500 rounded-xl font-bold shadow-md text-sm">记下来</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const TimeTracker = ({ logs, onSaveLog, onDeleteLog, tags, onAddTag, onUpdateTag, onDeleteTag }) => {
+  const [status, setStatus] = useState('idle');
+  const [elapsed, setElapsed] = useState(0);
+  const [selectedTag, setSelectedTag] = useState(tags[0] || {name:'默认', color:'#ccc'});
+  const [dialogMode, setDialogMode] = useState('select');
+  const [customTagInput, setCustomTagInput] = useState('');
+  const [selectedColor, setSelectedColor] = useState(COLOR_PALETTE[0]);
+  const [editingOriginalName, setEditingOriginalName] = useState(null);
+  const [showTagDialog, setShowTagDialog] = useState(false);
+
+  const timerRef = useRef(null);
+
+  useEffect(() => {
+    const saved = LocalDB.getTimerState();
+    if (saved) {
+      const foundTag = tags.find(t => t.name === saved.tag) || tags[0];
+      setSelectedTag(foundTag);
+      if (saved.status === 'running') {
+        const diff = Math.floor((Date.now() - saved.lastTick) / 1000);
+        setElapsed(saved.elapsed + diff);
+        setStatus('running');
+      } else {
+        setElapsed(saved.elapsed);
+        setStatus(saved.status);
+      }
+    }
+  }, [tags]);
+
+  useEffect(() => {
+    if (status === 'running') {
+      timerRef.current = setInterval(() => setElapsed(prev => prev + 1), 1000);
+    } else {
+      clearInterval(timerRef.current);
+    }
+    return () => clearInterval(timerRef.current);
+  }, [status]);
+
+  useEffect(() => {
+    if (status !== 'idle') {
+      LocalDB.saveTimerState({ status, elapsed, lastTick: Date.now(), tag: selectedTag.name });
+    }
+  }, [status, elapsed, selectedTag]);
+
+  const handleStart = () => setStatus('running');
+  const handlePause = () => setStatus('paused');
+  const handleStop = () => {
+    if (elapsed > 5) {
+      onSaveLog({ id: Date.now(), name: selectedTag.name, duration: elapsed, timestamp: Date.now() });
+    }
+    setStatus('idle');
+    setElapsed(0);
+    LocalDB.saveTimerState(null);
+  };
+
+  const totalDuration = logs.reduce((acc, log) => acc + log.duration, 0);
+
+  return (
+    <div className="space-y-6 pt-4">
+      {/* 计时控制台 */}
+      <div className={`relative p-6 bg-white rounded-3xl shadow-sm border-2 flex flex-col items-center min-h-[320px] transition-all duration-500 ${status === 'running' ? 'animate-pulse' : ''}`}
+           style={{ borderColor: status === 'running' ? selectedTag.color : '#FFF0D4' }}>
+        
+        <div className="w-full flex justify-between items-start">
+          <button 
+            onClick={() => setShowTagDialog(true)}
+            className="flex items-center gap-2 bg-orange-50 border border-orange-100 px-3 py-1.5 rounded-full hover:border-orange-300 transition-colors"
+          >
+            <div className="w-2 h-2 rounded-full" style={{backgroundColor: selectedTag.color}}></div>
+            <span className="text-sm font-bold text-gray-700">{selectedTag.name}</span>
+            <Tag size={14} className="text-gray-400" />
+          </button>
+          <div className="text-xs font-bold text-orange-300 uppercase tracking-widest py-1.5">
+            {status === 'running' ? 'Focusing' : 'Ready'}
+          </div>
+        </div>
+
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-6xl font-bold font-mono tracking-widest tabular-nums text-gray-800">
+            {formatTimeHHMMSS(elapsed)}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-6 w-full justify-center">
+          {status === 'running' ? (
+            <button onClick={handlePause} className="w-16 h-16 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center shadow-lg"><Pause size={32} /></button>
+          ) : (
+            <button onClick={handleStart} className="w-16 h-16 rounded-full bg-orange-500 text-white flex items-center justify-center shadow-lg"><Play size={32} className="ml-1"/></button>
+          )}
+          {(status === 'running' || status === 'paused') && (
+            <button onClick={handleStop} className="w-14 h-14 rounded-full bg-gray-50 text-gray-400 flex items-center justify-center shadow-md"><Square size={24} /></button>
+          )}
+        </div>
+      </div>
+
+      {/* 历史足迹 */}
+      <div className="bg-white rounded-3xl p-5 shadow-sm border border-orange-50">
+        <h3 className="font-bold text-gray-800 mb-4 px-2">今天的足迹</h3>
+        <div className="space-y-3">
+          {logs.length === 0 ? (
+            <div className="text-center py-8 text-gray-300 text-sm font-bold">还没有留下脚印哦</div>
+          ) : (
+            logs.map(log => (
+              <div key={log.id} className="bg-orange-50/30 p-3 rounded-2xl border border-orange-100 flex justify-between items-center animate-in slide-in-from-bottom-2">
+                <div className="flex items-center gap-3">
+                  <div className="w-2 h-2 rounded-full" style={{backgroundColor: tags.find(t => t.name === log.name)?.color || '#ccc'}}></div>
+                  <div>
+                    <div className="font-bold text-gray-700 text-sm">{log.name}</div>
+                    <div className="text-[10px] font-bold text-gray-400">{new Date(log.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="font-mono text-orange-600 font-bold bg-orange-100 px-2 py-1 rounded-lg text-xs">
+                    {Math.floor(log.duration / 60)}m
+                  </span>
+                  <button onClick={() => onDeleteLog(log.id)} className="text-gray-300 hover:text-red-500 p-1"><Trash2 size={16} /></button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* 标签管理弹窗 */}
+      {showTagDialog && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" onClick={() => setShowTagDialog(false)}></div>
+          <div className="bg-white p-5 w-80 rounded-3xl shadow-2xl relative z-10">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-bold text-gray-800">{dialogMode === 'select' ? '选择标签' : '管理标签'}</h3>
+              <button onClick={() => {
+                setDialogMode(prev => prev === 'select' ? 'edit' : 'select');
+                setEditingOriginalName(null);
+              }} className="p-2 bg-gray-100 rounded-full"><Settings size={16}/></button>
+            </div>
+            <div className="flex flex-wrap gap-2 mb-4 max-h-40 overflow-y-auto">
+              {tags.map((t, i) => (
+                <button 
+                  key={i} 
+                  onClick={() => {
+                    if(dialogMode === 'select') { setSelectedTag(t); setShowTagDialog(false); }
+                    else { setEditingOriginalName(t.name); setCustomTagInput(t.name); setSelectedColor(t.color); }
+                  }}
+                  className={`px-3 py-1.5 rounded-xl text-sm font-bold border-2 transition-all flex items-center gap-2 ${
+                    selectedTag.name === t.name ? 'border-orange-400 bg-orange-50' : 'border-gray-100'
+                  }`}
+                >
+                  <div className="w-2 h-2 rounded-full" style={{backgroundColor: t.color}}></div>
+                  {t.name}
+                </button>
+              ))}
+            </div>
+            <div className="border-t border-dashed pt-4">
+              <div className="flex gap-1 mb-3 overflow-x-auto pb-2">
+                {COLOR_PALETTE.map(c => (
+                  <button key={c} onClick={() => setSelectedColor(c)} className={`w-6 h-6 rounded-full flex-shrink-0 ${selectedColor === c ? 'ring-2 ring-offset-2 ring-gray-400' : ''}`} style={{backgroundColor: c}} />
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <input 
+                  className="flex-1 bg-gray-50 px-3 py-2 rounded-xl text-sm outline-none border border-gray-100 focus:border-orange-300"
+                  value={customTagInput}
+                  onChange={e => setCustomTagInput(e.target.value)}
+                  placeholder="标签名称"
+                />
+                <button 
+                  onClick={() => {
+                    if(!customTagInput.trim()) return;
+                    if(editingOriginalName) onUpdateTag(editingOriginalName, customTagInput, selectedColor);
+                    else onAddTag({name: customTagInput, color: selectedColor});
+                    setCustomTagInput('');
+                    setEditingOriginalName(null);
+                  }}
+                  className="bg-orange-500 text-white px-4 py-2 rounded-xl font-bold text-sm"
+                >
+                  OK
+                </button>
+              </div>
+            </div>
+            <button onClick={() => setShowTagDialog(false)} className="w-full mt-4 text-xs font-bold text-gray-300">关闭</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// --- 4. 主程序 App ---
+export default function App() {
+  const [activeTab, setActiveTab] = useState('habits');
+  const [todayData, setTodayData] = useState({ water: 0, poop: 0, spine: 0, sleep: 0, impulse: 0, timeLogs: [], impulseRecords: [] });
+  const [showImpulseModal, setShowImpulseModal] = useState(false);
+  const [toastMsg, setToastMsg] = useState(null);
+  const [currentDateStr, setCurrentDateStr] = useState(getShanghaiDate());
+  const [settings, setSettings] = useState(LocalDB.getSettings());
+  const [isLateNight, setIsLateNight] = useState(false);
+
+  useEffect(() => {
+    const nowStr = getShanghaiDate();
+    setCurrentDateStr(nowStr);
+    setTodayData(LocalDB.getToday(nowStr));
+    
+    const checkTime = () => {
+      const hour = new Date().getHours();
+      setIsLateNight(hour >= 23 || hour < 5);
+    };
+    checkTime();
+    const timer = setInterval(checkTime, 60000);
+    return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    if(toastMsg) {
+      const timer = setTimeout(() => setToastMsg(null), 2500);
+      return () => clearTimeout(timer);
+    }
+  }, [toastMsg]);
+
+  const updateHabit = (key, delta, extraData = null) => {
+    const currentVal = todayData[key] || 0;
+    let newVal = currentVal + delta;
+    if (newVal < 0) newVal = 0;
+    if (HABIT_CONFIG[key].type === 'count' && newVal > HABIT_CONFIG[key].max) return;
+    
+    let newData = { ...todayData, [key]: newVal };
+    if (extraData && key === 'impulse') {
+      const newRecord = { id: Date.now(), note: extraData.note, timestamp: Date.now() };
+      newData.impulseRecords = [newRecord, ...(todayData.impulseRecords || [])];
+    }
+    setTodayData(newData);
+    LocalDB.updateToday(currentDateStr, newData);
+  };
+
+  const addTimeLog = (log) => {
+    const newData = { ...todayData, timeLogs: [log, ...(todayData.timeLogs || [])] };
+    setTodayData(newData);
+    LocalDB.updateToday(currentDateStr, newData);
+  };
+
+  const deleteTimeLog = (id) => {
+    const newData = { ...todayData, timeLogs: todayData.timeLogs.filter(l => l.id !== id) };
+    setTodayData(newData);
+    LocalDB.updateToday(currentDateStr, newData);
+  };
+
+  const appBgClass = (isLateNight && todayData.sleep < 1) ? 'bg-[#1a1a2e]' : 'bg-[#FFFDF5]';
+
+  return (
+    <div className={`min-h-screen max-w-md mx-auto relative shadow-2xl overflow-hidden pb-28 transition-colors duration-700 ${appBgClass}`}>
+      
+      <header className="px-6 pt-10 pb-4 text-center">
+        <h1 className={`text-3xl font-bold tracking-tight mb-1 ${isLateNight && todayData.sleep < 1 ? 'text-indigo-300' : 'text-orange-600'}`} style={{fontFamily: 'system-ui'}}>
+          Deonysus
+        </h1>
+        <div className="inline-block bg-orange-50 px-3 py-1 rounded-full border border-orange-100">
+          <span className="text-[10px] font-bold text-orange-400 tracking-widest uppercase">{currentDateStr}</span>
+        </div>
+      </header>
+
+      <main className="px-5">
+        {activeTab === 'habits' ? (
+          <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-500">
+            {/* 问候语 */}
+            <div className={`p-4 rounded-3xl border-2 border-dashed relative transform ${
+              (isLateNight && todayData.sleep < 1) ? 'bg-indigo-900/30 border-indigo-400/30' : 'bg-orange-50/50 border-orange-200/50'
+            }`}>
+              {(isLateNight && todayData.sleep < 1) ? (
+                <>
+                  <p className="text-sm font-bold text-indigo-300 mb-1 flex items-center gap-2"><Moon size={16} /> 夜深了，小姑娘。</p>
+                  <p className="text-xs text-indigo-100/70 leading-relaxed">“该休息了。把烦恼都留给我，被窝里只有温暖。点亮‘睡前锚点’吧。”</p>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm font-bold text-orange-600 mb-1">“我的小姑娘，这里是你的港湾。”</p>
+                  <p className="text-xs text-gray-500 leading-relaxed">“不要再咬指甲了，我会一直守着你。你无需强大，有我在。”</p>
+                </>
+              )}
+            </div>
+
+            <div className="space-y-3">
+              {['water', 'poop', 'spine', 'sleep'].map(key => (
+                <HabitCard 
+                  key={key} 
+                  config={HABIT_CONFIG[key]} 
+                  value={todayData[key] || 0} 
+                  onIncrement={() => updateHabit(key, 1)} 
+                  isNight={(isLateNight && todayData.sleep < 1)}
+                />
+              ))}
+            </div>
+
+            {/* 冲动记录 */}
+            <div className="bg-white rounded-3xl p-5 shadow-sm border-4 border-pink-50 mt-6">
+              <div className="flex justify-between items-center mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-pink-100 flex items-center justify-center text-pink-500"><Brain size={24}/></div>
+                  <div>
+                    <h3 className="font-bold text-gray-800">冲动觉察</h3>
+                    <p className="text-[10px] text-gray-400 font-bold">感知、停顿、记录</p>
+                  </div>
+                </div>
+                <div className="text-4xl font-bold text-pink-500 font-mono">{todayData.impulse || 0}</div>
+              </div>
+              <button 
+                onClick={() => setShowImpulseModal(true)} 
+                className="w-full bg-pink-500 text-white py-3 rounded-2xl font-bold shadow-lg shadow-pink-100 active:scale-95 transition-all"
+              >
+                记录一次停顿
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="animate-in fade-in duration-500">
+            <TimeTracker 
+              logs={todayData.timeLogs || []} 
+              onSaveLog={addTimeLog}
+              onDeleteLog={deleteTimeLog}
+              tags={settings.tags}
+              onAddTag={(tag) => {
+                const newSettings = { ...settings, tags: [...settings.tags, tag] };
+                setSettings(newSettings); LocalDB.saveSettings(newSettings);
+              }}
+              onUpdateTag={(old, name, color) => {
+                const newTags = settings.tags.map(t => t.name === old ? {name, color} : t);
+                const newSettings = { ...settings, tags: newTags };
+                setSettings(newSettings); LocalDB.saveSettings(newSettings);
+              }}
+              onDeleteTag={(name) => {
+                const newSettings = { ...settings, tags: settings.tags.filter(t => t.name !== name) };
+                setSettings(newSettings); LocalDB.saveSettings(newSettings);
+              }}
+            />
+          </div>
+        )}
+      </main>
+
+      {/* 底部导航 */}
+      <nav className={`fixed bottom-0 left-0 right-0 backdrop-blur-md border-t border-orange-100 flex justify-around items-center pb-6 pt-2 z-40 max-w-md mx-auto rounded-t-[40px] shadow-2xl transition-colors ${
+        (isLateNight && todayData.sleep < 1) ? 'bg-indigo-950/80 border-indigo-800' : 'bg-white/90 border-orange-100'
+      }`}>
+        <button onClick={() => setActiveTab('habits')} className={`flex flex-col items-center justify-center w-full py-2 ${activeTab === 'habits' ? 'text-orange-500' : 'text-gray-300'}`}>
+          <Home size={24} className={activeTab === 'habits' ? 'animate-bounce' : ''}/>
+          <span className="text-[10px] font-bold mt-1">守护</span>
+        </button>
+        <button onClick={() => setActiveTab('time')} className={`flex flex-col items-center justify-center w-full py-2 ${activeTab === 'time' ? 'text-orange-500' : 'text-gray-300'}`}>
+          <Clock size={24} className={activeTab === 'time' ? 'animate-bounce' : ''}/>
+          <span className="text-[10px] font-bold mt-1">专注</span>
+        </button>
+      </nav>
+
+      {showImpulseModal && (
+        <ImpulseModal 
+          onClose={() => setShowImpulseModal(false)} 
+          onConfirm={(note) => {
+            updateHabit('impulse', 1, { note });
+            setShowImpulseModal(false);
+            setToastMsg(note ? "我也听到了。" : "觉察已记录");
+          }} 
+        />
+      )}
+      
+      {toastMsg && (
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white px-6 py-2 rounded-full text-xs font-bold animate-in fade-in slide-in-from-bottom-4 duration-300">
+          {toastMsg}
+        </div>
+      )}
+    </div>
+  );
+}
