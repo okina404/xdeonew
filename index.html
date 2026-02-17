@@ -5,13 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>My Personal Hub</title>
     
-    <!-- iOS PWA 核心设置：这是解决黑屏的关键 -->
+    <!-- iOS PWA 核心设置 -->
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <!-- 将状态栏设为黑色，避免某些机型下的黑屏误判 -->
-    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="MyHub">
     
-    <!-- 显式图标声明：iOS 必须能直接访问到图片文件 -->
+    <!-- 图标声明 -->
     <link rel="apple-touch-icon" href="app-icon.png">
     <link rel="icon" type="image/png" href="app-icon.png">
 
@@ -21,7 +20,6 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     
     <style>
-        /* 强制背景色，防止白屏或黑屏闪烁 */
         :root {
             --main-bg: #1a1a1a;
         }
@@ -38,13 +36,13 @@
             -webkit-user-select: none;
         }
 
-        /* 手机主屏幕背景：使用 CSS 多重背景，不再依赖 JS 加载 */
+        /* 手机主屏幕背景 */
         .phone-screen {
             position: relative;
             width: 100%;
             height: 100%;
             background-image: 
-                linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, transparent 20%, transparent 80%, rgba(0,0,0,0.4) 100%),
+                linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, transparent 20%, transparent 80%, rgba(0,0,0,0.3) 100%),
                 url('wallpaper.jpg'), 
                 url('https://images.unsplash.com/photo-1513151233558-d860c5398176?q=80&w=1000&auto=format&fit=crop');
             background-repeat: no-repeat;
@@ -60,21 +58,9 @@
             height: 100%;
             display: flex;
             flex-direction: column;
-            /* 适配刘海屏 */
+            /* 仅保留刘海屏的安全区域间距，不显示具体内容 */
             padding-top: env(safe-area-inset-top, 20px);
             padding-bottom: env(safe-area-inset-bottom, 20px);
-        }
-
-        .status-bar {
-            height: 44px;
-            padding: 0 25px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            color: white;
-            font-size: 14px;
-            font-weight: 600;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
         }
 
         .app-grid {
@@ -83,7 +69,7 @@
             grid-template-columns: repeat(4, 1fr);
             grid-auto-rows: min-content;
             gap: 15px;
-            padding: 30px 20px;
+            padding: 40px 20px;
             overflow-y: auto;
         }
 
@@ -143,15 +129,6 @@
 
     <div class="phone-screen">
         <div class="content-layer">
-            <div class="status-bar">
-                <div id="clock">00:00</div>
-                <div class="flex items-center gap-2">
-                    <i data-lucide="signal" size="14" stroke-width="3"></i>
-                    <i data-lucide="wifi" size="14" stroke-width="3"></i>
-                    <i data-lucide="battery" size="16" stroke-width="2.5"></i>
-                </div>
-            </div>
-
             <div class="app-grid" id="main-grid">
                 <!-- 图标由脚本生成 -->
             </div>
@@ -175,12 +152,11 @@
             ]
         };
 
-        // 核心修复：使用更稳定的方式处理 PWA 启动
         function setupPWA() {
             const manifest = {
                 "name": "Deonysus Hub",
                 "short_name": "MyHub",
-                "start_url": window.location.href, // 使用完整路径提高稳定性
+                "start_url": window.location.href,
                 "display": "standalone",
                 "background_color": "#1a1a1a",
                 "theme_color": "#000000",
@@ -190,14 +166,12 @@
                 ]
             };
 
-            // 使用 Data URI 替代 Blob URL，防止内存失效导致的黑屏
             const manifestStr = encodeURIComponent(JSON.stringify(manifest));
             const link = document.createElement('link');
             link.rel = 'manifest';
             link.href = 'data:application/json;charset=utf-8,' + manifestStr;
             document.head.appendChild(link);
 
-            // 注册 Service Worker (仅当支持时)
             if ('serviceWorker' in navigator) {
                 const swCode = `
                     self.addEventListener('install', e => self.skipWaiting());
@@ -209,19 +183,12 @@
             }
         }
 
-        function updateClock() {
-            const now = new Date();
-            document.getElementById('clock').textContent = 
-                `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-        }
-
         function renderIcons() {
             const grid = document.getElementById('main-grid');
             CONFIG.apps.forEach(app => {
                 const wrapper = document.createElement('a');
                 wrapper.href = app.url;
                 wrapper.className = 'app-icon-wrapper';
-                // 在独立模式下打开链接建议
                 wrapper.target = "_blank"; 
 
                 const iconDiv = document.createElement('div');
@@ -251,13 +218,6 @@
         window.onload = () => {
             setupPWA();
             renderIcons();
-            setInterval(updateClock, 1000);
-            updateClock();
-            
-            // 调试：如果仍然黑屏，检查是否进入了独立模式
-            if (window.navigator.standalone) {
-                console.log("Running in standalone mode");
-            }
         };
     </script>
 </body>
