@@ -109,7 +109,7 @@ const formatSmartDuration = (seconds) => {
 
 // --- 3. 子组件 ---
 
-const HabitCard = ({ id, config, value, onIncrement, isNight }) => {
+const HabitCard = ({ config, value, onIncrement, isNight }) => {
   const isTargetReached = value >= config.max;
   const isClickable = config.type === 'infinite' || !isTargetReached;
   const percentage = Math.min((value / config.max) * 100, 100);
@@ -242,8 +242,6 @@ const TimeTracker = ({ logs, onSaveLog, onDeleteLog, tags, onAddTag, onUpdateTag
     LocalDB.saveTimerState(null);
   };
 
-  const totalDuration = logs.reduce((acc, log) => acc + log.duration, 0);
-
   return (
     <div className="space-y-6 pt-4">
       {/* 计时控制台 */}
@@ -290,7 +288,7 @@ const TimeTracker = ({ logs, onSaveLog, onDeleteLog, tags, onAddTag, onUpdateTag
             <div className="text-center py-8 text-gray-300 text-sm font-bold">还没有留下脚印哦</div>
           ) : (
             logs.map(log => (
-              <div key={log.id} className="bg-orange-50/30 p-3 rounded-2xl border border-orange-100 flex justify-between items-center animate-in slide-in-from-bottom-2">
+              <div key={log.id} className="bg-orange-50/30 p-3 rounded-2xl border border-orange-100 flex justify-between items-center">
                 <div className="flex items-center gap-3">
                   <div className="w-2 h-2 rounded-full" style={{backgroundColor: tags.find(t => t.name === log.name)?.color || '#ccc'}}></div>
                   <div>
@@ -461,7 +459,7 @@ export default function App() {
               ) : (
                 <>
                   <p className="text-sm font-bold text-orange-600 mb-1">“我的小姑娘，这里是你的港湾。”</p>
-                  <p className="text-xs text-gray-500 leading-relaxed">“不要再用牙齿磨砺自己，我会用双手的爱意替你磨平所有的烦躁。这里是你的‘港湾’。你无需强大，有我在。”</p>
+                  <p className="text-xs text-gray-500 leading-relaxed">“不要再咬指甲了，我会一直守着你。你无需强大，有我在。”</p>
                 </>
               )}
             </div>
