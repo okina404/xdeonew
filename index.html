@@ -5,18 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>My Personal Hub</title>
     
-    <!-- PWA Meta Tags for iOS -->
+    <!-- iOS PWA 核心设置：这是解决黑屏的关键 -->
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <!-- 将状态栏设为黑色，避免某些机型下的黑屏误判 -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
     <meta name="apple-mobile-web-app-title" content="MyHub">
-    <!-- 关键：添加苹果触摸图标链接 -->
+    
+    <!-- 显式图标声明：iOS 必须能直接访问到图片文件 -->
     <link rel="apple-touch-icon" href="app-icon.png">
+    <link rel="icon" type="image/png" href="app-icon.png">
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
+    
     <style>
+        /* 强制背景色，防止白屏或黑屏闪烁 */
+        :root {
+            --main-bg: #1a1a1a;
+        }
+
         body, html {
             margin: 0;
             padding: 0;
@@ -24,34 +33,25 @@
             height: 100%;
             overflow: hidden;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #000; /* 默认纯黑，防止白屏闪烁 */
+            background-color: var(--main-bg);
             -webkit-touch-callout: none;
             -webkit-user-select: none;
         }
 
-        /* 手机主屏幕背景 */
+        /* 手机主屏幕背景：使用 CSS 多重背景，不再依赖 JS 加载 */
         .phone-screen {
             position: relative;
             width: 100%;
             height: 100%;
+            background-image: 
+                linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, transparent 20%, transparent 80%, rgba(0,0,0,0.4) 100%),
+                url('wallpaper.jpg'), 
+                url('https://images.unsplash.com/photo-1513151233558-d860c5398176?q=80&w=1000&auto=format&fit=crop');
             background-repeat: no-repeat;
             background-position: center center;
             background-size: cover;
             display: flex;
             flex-direction: column;
-            transition: opacity 0.5s ease-in-out;
-            opacity: 0; /* 初始隐藏，等壁纸准备好再显示 */
-        }
-
-        .phone-screen.loaded {
-            opacity: 1;
-        }
-
-        .glass-overlay {
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, transparent 20%, transparent 80%, rgba(0,0,0,0.3) 100%);
-            z-index: 1;
         }
 
         .content-layer {
@@ -60,31 +60,30 @@
             height: 100%;
             display: flex;
             flex-direction: column;
-            padding-top: env(safe-area-inset-top);
-            padding-bottom: env(safe-area-inset-bottom);
+            /* 适配刘海屏 */
+            padding-top: env(safe-area-inset-top, 20px);
+            padding-bottom: env(safe-area-inset-bottom, 20px);
         }
 
-        /* 顶部状态栏 */
         .status-bar {
             height: 44px;
-            padding: 0 30px;
+            padding: 0 25px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             color: white;
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 600;
             text-shadow: 0 1px 2px rgba(0,0,0,0.5);
         }
 
-        /* 图标网格排列 */
         .app-grid {
             flex: 1;
             display: grid;
             grid-template-columns: repeat(4, 1fr);
             grid-auto-rows: min-content;
-            gap: 20px;
-            padding: 40px 24px;
+            gap: 15px;
+            padding: 30px 20px;
             overflow-y: auto;
         }
 
@@ -94,30 +93,27 @@
             align-items: center;
             text-decoration: none;
             outline: none;
-            margin-bottom: 10px;
         }
 
-        /* 扁平化圆角图标 */
         .app-icon {
-            width: 64px;
-            height: 64px;
-            border-radius: 16px;
+            width: 62px;
+            height: 62px;
+            border-radius: 15px;
             background: white;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-            margin-bottom: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            margin-bottom: 6px;
             overflow: hidden;
             transition: transform 0.1s ease;
         }
 
-        /* 兜底图标颜色 */
         .app-icon.fallback {
             background: linear-gradient(135deg, #FFDEE9 0%, #B5FFFC 100%);
-            color: #555;
+            color: #444;
             font-weight: bold;
-            font-size: 24px;
+            font-size: 22px;
         }
 
         .app-icon-wrapper:active .app-icon {
@@ -132,9 +128,9 @@
 
         .app-name {
             color: white;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 500;
-            text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+            text-shadow: 0 1px 3px rgba(0,0,0,0.8);
             text-align: center;
             width: 100%;
             white-space: nowrap;
@@ -145,36 +141,26 @@
 </head>
 <body>
 
-    <div class="phone-screen" id="main-screen">
-        <div class="glass-overlay"></div>
-        
+    <div class="phone-screen">
         <div class="content-layer">
             <div class="status-bar">
                 <div id="clock">00:00</div>
                 <div class="flex items-center gap-2">
-                    <i data-lucide="signal" size="16" stroke-width="3"></i>
-                    <i data-lucide="wifi" size="16" stroke-width="3"></i>
-                    <i data-lucide="battery" size="18" stroke-width="2.5"></i>
+                    <i data-lucide="signal" size="14" stroke-width="3"></i>
+                    <i data-lucide="wifi" size="14" stroke-width="3"></i>
+                    <i data-lucide="battery" size="16" stroke-width="2.5"></i>
                 </div>
             </div>
 
             <div class="app-grid" id="main-grid">
-                <!-- 图标将由脚本生成 -->
+                <!-- 图标由脚本生成 -->
             </div>
         </div>
     </div>
 
     <script>
-        // --- 配置部分 ---
         const CONFIG = {
-            // 壁纸路径：优先使用本地 wallpaper.jpg，不设置则使用网络备份
-            wallpaper: "wallpaper.jpg",
-            fallbackWallpaper: "https://images.unsplash.com/photo-1513151233558-d860c5398176?q=80&w=1000&auto=format&fit=crop",
-
-            // PWA 整体的图标（安装到桌面显示的那个）
             pwaIcon: "app-icon.png", 
-            
-            // 内部显示的仓库列表
             apps: [
                 { 
                     name: "Daily日常记录", 
@@ -189,107 +175,89 @@
             ]
         };
 
+        // 核心修复：使用更稳定的方式处理 PWA 启动
+        function setupPWA() {
+            const manifest = {
+                "name": "Deonysus Hub",
+                "short_name": "MyHub",
+                "start_url": window.location.href, // 使用完整路径提高稳定性
+                "display": "standalone",
+                "background_color": "#1a1a1a",
+                "theme_color": "#000000",
+                "icons": [
+                    { "src": CONFIG.pwaIcon, "sizes": "192x192", "type": "image/png" },
+                    { "src": CONFIG.pwaIcon, "sizes": "512x512", "type": "image/png" }
+                ]
+            };
+
+            // 使用 Data URI 替代 Blob URL，防止内存失效导致的黑屏
+            const manifestStr = encodeURIComponent(JSON.stringify(manifest));
+            const link = document.createElement('link');
+            link.rel = 'manifest';
+            link.href = 'data:application/json;charset=utf-8,' + manifestStr;
+            document.head.appendChild(link);
+
+            // 注册 Service Worker (仅当支持时)
+            if ('serviceWorker' in navigator) {
+                const swCode = `
+                    self.addEventListener('install', e => self.skipWaiting());
+                    self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
+                    self.addEventListener('fetch', e => e.respondWith(fetch(e.request)));
+                `;
+                const blob = new Blob([swCode], { type: 'text/javascript' });
+                navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(err => console.log('SW failed', err));
+            }
+        }
+
         function updateClock() {
             const now = new Date();
             document.getElementById('clock').textContent = 
                 `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
         }
-        setInterval(updateClock, 1000);
-        updateClock();
 
-        function createIconElement(app) {
-            const wrapper = document.createElement('a');
-            wrapper.href = app.url;
-            wrapper.className = 'app-icon-wrapper';
-            wrapper.target = "_blank"; 
+        function renderIcons() {
+            const grid = document.getElementById('main-grid');
+            CONFIG.apps.forEach(app => {
+                const wrapper = document.createElement('a');
+                wrapper.href = app.url;
+                wrapper.className = 'app-icon-wrapper';
+                // 在独立模式下打开链接建议
+                wrapper.target = "_blank"; 
 
-            const iconDiv = document.createElement('div');
-            iconDiv.className = 'app-icon';
-            
-            const img = document.createElement('img');
-            img.src = app.icon;
-            img.onerror = function() {
-                this.style.display = 'none';
-                iconDiv.classList.add('fallback');
-                iconDiv.textContent = app.name.charAt(0).toUpperCase();
-            };
-            
-            iconDiv.appendChild(img);
-            wrapper.appendChild(iconDiv);
+                const iconDiv = document.createElement('div');
+                iconDiv.className = 'app-icon';
+                
+                const img = document.createElement('img');
+                img.src = app.icon;
+                img.onerror = function() {
+                    this.style.display = 'none';
+                    iconDiv.classList.add('fallback');
+                    iconDiv.textContent = app.name.charAt(0).toUpperCase();
+                };
+                
+                iconDiv.appendChild(img);
+                wrapper.appendChild(iconDiv);
 
-            const nameSpan = document.createElement('span');
-            nameSpan.className = 'app-name';
-            nameSpan.textContent = app.name;
-            wrapper.appendChild(nameSpan);
+                const nameSpan = document.createElement('span');
+                nameSpan.className = 'app-name';
+                nameSpan.textContent = app.name;
+                wrapper.appendChild(nameSpan);
 
-            return wrapper;
-        }
-
-        async function initWallpaper() {
-            const screen = document.getElementById('main-screen');
-            const img = new Image();
-            
-            // 尝试加载本地壁纸
-            img.src = CONFIG.wallpaper;
-            img.onload = () => {
-                screen.style.backgroundImage = `url('${CONFIG.wallpaper}')`;
-                screen.classList.add('loaded');
-            };
-            img.onerror = () => {
-                // 如果本地失败，加载备份壁纸
-                screen.style.backgroundImage = `url('${CONFIG.fallbackWallpaper}')`;
-                screen.classList.add('loaded');
-            };
-        }
-
-        function initIcons() {
-            const mainGrid = document.getElementById('main-grid');
-            CONFIG.apps.forEach(app => mainGrid.appendChild(createIconElement(app)));
+                grid.appendChild(wrapper);
+            });
             lucide.createIcons();
         }
 
-        // PWA 配置
-        if ('serviceWorker' in navigator) {
-            const swCode = `
-                self.addEventListener('install', e => e.waitUntil(self.skipWaiting()));
-                self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
-                self.addEventListener('fetch', e => e.respondWith(fetch(e.request)));
-            `;
-            const blob = new Blob([swCode], { type: 'text/javascript' });
-            navigator.serviceWorker.register(URL.createObjectURL(blob));
-        }
-
-        // 动态生成的 Manifest
-        const manifest = {
-            "name": "Deonysus Project Hub",
-            "short_name": "Hub",
-            "start_url": ".",
-            "display": "standalone",
-            "background_color": "#000000",
-            "theme_color": "#000000",
-            "icons": [
-                {
-                    "src": CONFIG.pwaIcon,
-                    "sizes": "192x192",
-                    "type": "image/png",
-                    "purpose": "any"
-                },
-                {
-                    "src": CONFIG.pwaIcon,
-                    "sizes": "512x512",
-                    "type": "image/png",
-                    "purpose": "any"
-                }
-            ]
-        };
-        const manifestLink = document.createElement('link');
-        manifestLink.rel = 'manifest';
-        manifestLink.href = URL.createObjectURL(new Blob([JSON.stringify(manifest)], {type: 'application/json'}));
-        document.head.appendChild(manifestLink);
-
         window.onload = () => {
-            initWallpaper();
-            initIcons();
+            setupPWA();
+            renderIcons();
+            setInterval(updateClock, 1000);
+            updateClock();
+            
+            // 调试：如果仍然黑屏，检查是否进入了独立模式
+            if (window.navigator.standalone) {
+                console.log("Running in standalone mode");
+            }
         };
     </script>
 </body>
