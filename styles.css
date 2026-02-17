@@ -1,0 +1,55 @@
+/* 基础设置 */
+body {
+    background-color: #FFFDF5;
+    color: #4A4A4A;
+    touch-action: manipulation;
+    font-family: "Nunito", "Quicksand", -apple-system, BlinkMacSystemFont, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* 隐藏滚动条 */
+::-webkit-scrollbar { width: 0px; background: transparent; }
+.tap-highlight-transparent { -webkit-tap-highlight-color: transparent; }
+
+/* 动画 */
+.fade-in { animation: fadeIn 0.4s ease-out forwards; opacity: 0; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+/* 布局工具 */
+.safe-area-pb { padding-bottom: calc(1rem + env(safe-area-inset-bottom)); }
+.doodle-border { border: 2px dashed #E0D8C0; }
+.soft-shadow { box-shadow: 0 6px 16px rgba(220, 200, 180, 0.25); }
+
+/* 标签胶囊样式 */
+.tag-capsule {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.tag-capsule:active { transform: scale(0.95); }
+
+/* --- V16 新增：热力日历样式 --- */
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+}
+.calendar-day {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    font-size: 10px;
+    font-weight: bold;
+    color: rgba(74, 74, 74, 0.5);
+    transition: transform 0.2s;
+    cursor: pointer;
+}
+.calendar-day:active { transform: scale(0.9); }
+
+/* 热力等级颜色 (0-4级) */
+.heat-0 { background-color: #F5F5F0; color: #CCC; } /* 无记录 */
+.heat-1 { background-color: #FFF3E0; color: #E67E22; } /* 稍微有点记录 */
+.heat-2 { background-color: #FFCC80; color: #E65100; }
+.heat-3 { background-color: #FFB74D; color: #EF6C00; }
+.heat-4 { background-color: #FF9800; color: white; box-shadow: 0 2px 4px rgba(230, 81, 0, 0.2); } /* 完美一天 */

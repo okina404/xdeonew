@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Deonysus | 守护锚点</title>
+    
+    <!-- PWA 配置 -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Deonysus">
+    
+    <!-- 图标引用 -->
+    <link rel="apple-touch-icon" href="icon.png">
+    <link rel="icon" type="image/png" href="icon.png">
+    
+    <!-- 样式表 -->
+    <link rel="stylesheet" href="styles.css">
+    
+    <!-- 核心库 (Staticfile 国内源) -->
+    <script crossorigin src="https://cdn.staticfile.org/react/18.2.0/umd/react.production.min.js"></script>
+    <script crossorigin src="https://cdn.staticfile.org/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdn.staticfile.org/babel-standalone/7.23.5/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Tailwind 配置 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        paper: '#FFFDF5',
+                        ink: '#4A4A4A',
+                        cream: '#FDF6E3',
+                        warm: { 100: '#FFF0D4', 200: '#FFE0A3', 300: '#FFCB70', 500: '#FF9F43', 600: '#E67E22' },
+                        sage: { 100: '#E8F5E9', 500: '#81C784', 600: '#66BB6A' },
+                        berry: { 100: '#FCE4EC', 500: '#F06292', 600: '#EC407A' },
+                        tomato: { 100: '#FFEBEE', 500: '#FF5252', 600: '#E53935' }
+                    },
+                    fontFamily: {
+                        rounded: ['"Nunito"', '"Quicksand"', '"Varela Round"', 'system-ui', 'rounded', '-apple-system', 'sans-serif'],
+                    },
+                    animation: {
+                        'breathe': 'breathe 4s ease-in-out infinite',
+                        'float': 'float 3s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        breathe: {
+                            '0%, 100%': { transform: 'scale(1)', opacity: '0.95' },
+                            '50%': { transform: 'scale(1.02)', opacity: '1' },
+                        },
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-3px)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="font-rounded selection:bg-warm-200 bg-paper text-ink">
+
+    <div id="root"></div>
+
+    <!-- 错误捕捉 -->
+    <script>
+        window.onerror = function(message) {
+            if (message === 'Script error.') return;
+            
+            const root = document.getElementById('root');
+            // 只有当 root 是空的时候（说明页面崩了）才显示错误
+            if (root && root.innerHTML.trim() === "") {
+                root.innerHTML = `
+                    <div style="padding:20px;color:#E53935;text-align:center;font-family:sans-serif;">
+                        <h3 style="margin-bottom:10px;">🤕 遇到了一点小障碍</h3>
+                        <p style="font-size:12px;opacity:0.8;">请尝试刷新页面</p>
+                        <div style="margin-top:15px;background:#fff0f0;padding:10px;border-radius:8px;text-align:left;font-size:10px;border:1px solid #ffcdcd;word-break:break-all;">
+                            ${message}
+                        </div>
+                    </div>`;
+            }
+        };
+    </script>
+
+    <!-- 引入主逻辑 -->
+    <script type="text/babel" src="app.js"></script>
+
+    <!-- 启动 Service Worker (本地记忆库) -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                // 注册 sw.js，赋予 App 离线能力和秒开速度
+                navigator.serviceWorker.register('./sw.js')
+                    .then(registration => {
+                        console.log('Deonysus: 记忆库已就绪', registration.scope);
+                    })
+                    .catch(error => {
+                        console.log('Deonysus: 记忆库加载失败', error);
+                    });
+            });
+        }
+    </script>
+</body>
+</html>
