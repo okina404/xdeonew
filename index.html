@@ -1,28 +1,4 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { 
-  Droplets, 
-  Wind, 
-  Moon, 
-  Brain, 
-  Plus, 
-  Check, 
-  Trash2, 
-  Download, 
-  Upload, 
-  Play, 
-  Pause, 
-  Square, 
-  Home, 
-  Clock, 
-  Tag, 
-  ChevronLeft, 
-  ChevronRight, 
-  Calendar, 
-  Settings, 
-  X,
-  BarChart3,
-  RotateCcw
-} from 'lucide-react';
 
 // --- 1. 基础配置与常量 ---
 const STORAGE_KEY = 'deonysus_anchor_data_v1';
@@ -42,7 +18,53 @@ const HABIT_CONFIG = {
   impulse: { label: "🧠 冲动记录", max: 999, desc: "护甲：觉察与停顿", type: "infinite", color: "bg-rose-100 text-rose-600" }
 };
 
-// --- 2. 工具函数 ---
+// --- 2. 图标组件 (内置 SVG 以确保兼容性) ---
+const Icons = {
+  Check: ({ size = 24, className = "" }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="20 6 9 17 4 12"/></svg>
+  ),
+  Plus: ({ size = 24, className = "" }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+  ),
+  Play: ({ size = 24, className = "" }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" stroke="none" className={className}><path d="M5 3l14 9-14 9V3z"/></svg>
+  ),
+  Pause: ({ size = 24, className = "" }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" stroke="none" className={className}><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
+  ),
+  Stop: ({ size = 24, className = "" }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" stroke="none" className={className}><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
+  ),
+  Home: ({ size = 24, className = "" }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+  ),
+  Clock: ({ size = 24, className = "" }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+  ),
+  Tag: ({ size = 24, className = "" }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+  ),
+  Trash: ({ size = 24, className = "" }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+  ),
+  Settings: ({ size = 24, className = "" }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+  ),
+  X: ({ size = 24, className = "" }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+  ),
+  Chart: ({ size = 24, className = "" }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+  ),
+  Refresh: ({ size = 24, className = "" }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>
+  ),
+  Moon: ({ size = 24, className = "" }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" stroke="none" className={className}><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+  )
+};
+
+// --- 3. 工具函数 ---
 const LocalDB = {
   getAll: () => {
     try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); } catch { return {}; }
@@ -82,9 +104,6 @@ const LocalDB = {
     } catch { 
       return { tags: [{ name: '工作', color: COLOR_PALETTE[0] }] }; 
     }
-  },
-  saveSettings: (settings) => {
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
   }
 };
 
@@ -101,13 +120,7 @@ const formatTimeHHMMSS = (seconds) => {
   return `${h}:${m}:${s}`;
 };
 
-const formatSmartDuration = (seconds) => {
-  const m = seconds / 60;
-  if (m < 60) return `${m.toFixed(1)}m`;
-  return `${(m / 60).toFixed(1)}h`;
-};
-
-// --- 3. 子组件 ---
+// --- 4. 子组件 ---
 
 const HabitCard = ({ config, value, onIncrement, isNight }) => {
   const isTargetReached = value >= config.max;
@@ -139,7 +152,7 @@ const HabitCard = ({ config, value, onIncrement, isNight }) => {
               isTargetReached ? (isNight ? 'text-indigo-400 line-through' : 'text-gray-400 line-through') : (isNight ? 'text-indigo-100' : 'text-gray-800')
             }`}>
               {config.label.split(' ')[1]} 
-              {isTargetReached && <Check size={18} className={isNight ? "text-indigo-400" : "text-orange-500"} />}
+              {isTargetReached && <Icons.Check size={18} className={isNight ? "text-indigo-400" : "text-orange-500"} />}
             </h3>
             <p className={`text-xs font-bold mt-0.5 ${isNight ? 'text-indigo-300/50' : 'text-gray-400'}`}>{config.desc}</p>
           </div>
@@ -156,7 +169,7 @@ const HabitCard = ({ config, value, onIncrement, isNight }) => {
               (config.type === 'infinite' ? (isNight ? 'bg-indigo-600 text-white border-indigo-700' : 'bg-orange-400 text-white border-orange-500') : (isNight ? 'bg-gray-800 text-gray-600 border-gray-700' : 'bg-gray-100 text-gray-300 border-gray-200')) : 
               (isNight ? 'bg-indigo-900 text-indigo-300 border-indigo-800' : 'bg-orange-50 text-orange-600 border-orange-100')
           }`}>
-            <Plus size={20} />
+            <Icons.Plus size={20} />
           </div>
         </div>
       </div>
@@ -171,7 +184,7 @@ const ImpulseModal = ({ onClose, onConfirm }) => {
       <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose}></div>
       <div className="bg-white w-full max-w-xs rounded-3xl shadow-2xl relative z-10 p-5 border-4 border-pink-100 animate-in zoom-in duration-200">
         <h3 className="text-lg font-bold text-gray-800 mb-1">接住你了</h3>
-        <p className="text-xs text-gray-400 mb-4 font-bold">告诉我，发生了什么？（不想说也没关系）</p>
+        <p className="text-xs text-gray-400 mb-4 font-bold">告诉我，发生了什么？</p>
         <textarea 
           className="w-full bg-gray-50 border border-gray-100 rounded-xl p-3 text-sm outline-none focus:border-pink-300 focus:ring-2 focus:ring-pink-50 transition-all mb-4 h-24 resize-none"
           placeholder="比如：焦虑、无聊、牙痒痒..."
@@ -192,11 +205,11 @@ const TimeTracker = ({ logs, onSaveLog, onDeleteLog, tags, onAddTag, onUpdateTag
   const [status, setStatus] = useState('idle');
   const [elapsed, setElapsed] = useState(0);
   const [selectedTag, setSelectedTag] = useState(tags[0] || {name:'默认', color:'#ccc'});
+  const [showTagDialog, setShowTagDialog] = useState(false);
   const [dialogMode, setDialogMode] = useState('select');
   const [customTagInput, setCustomTagInput] = useState('');
   const [selectedColor, setSelectedColor] = useState(COLOR_PALETTE[0]);
   const [editingOriginalName, setEditingOriginalName] = useState(null);
-  const [showTagDialog, setShowTagDialog] = useState(false);
 
   const timerRef = useRef(null);
 
@@ -243,8 +256,7 @@ const TimeTracker = ({ logs, onSaveLog, onDeleteLog, tags, onAddTag, onUpdateTag
   };
 
   return (
-    <div className="space-y-6 pt-4">
-      {/* 计时控制台 */}
+    <div className="space-y-6 pt-4 animate-in fade-in duration-500">
       <div className={`relative p-6 bg-white rounded-3xl shadow-sm border-2 flex flex-col items-center min-h-[320px] transition-all duration-500 ${status === 'running' ? 'animate-pulse' : ''}`}
            style={{ borderColor: status === 'running' ? selectedTag.color : '#FFF0D4' }}>
         
@@ -253,11 +265,11 @@ const TimeTracker = ({ logs, onSaveLog, onDeleteLog, tags, onAddTag, onUpdateTag
             onClick={() => setShowTagDialog(true)}
             className="flex items-center gap-2 bg-orange-50 border border-orange-100 px-3 py-1.5 rounded-full hover:border-orange-300 transition-colors"
           >
-            <div className="w-2 h-2 rounded-full" style={{backgroundColor: selectedTag.color}}></div>
+            <div className="w-2.5 h-2.5 rounded-full" style={{backgroundColor: selectedTag.color}}></div>
             <span className="text-sm font-bold text-gray-700">{selectedTag.name}</span>
-            <Tag size={14} className="text-gray-400" />
+            <Icons.Tag size={14} className="text-gray-400" />
           </button>
-          <div className="text-xs font-bold text-orange-300 uppercase tracking-widest py-1.5">
+          <div className="text-[10px] font-bold text-orange-300 uppercase tracking-[0.2em] py-1.5">
             {status === 'running' ? 'Focusing' : 'Ready'}
           </div>
         </div>
@@ -270,22 +282,21 @@ const TimeTracker = ({ logs, onSaveLog, onDeleteLog, tags, onAddTag, onUpdateTag
 
         <div className="flex items-center gap-6 w-full justify-center">
           {status === 'running' ? (
-            <button onClick={handlePause} className="w-16 h-16 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center shadow-lg"><Pause size={32} /></button>
+            <button onClick={handlePause} className="w-16 h-16 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center shadow-lg active:scale-90 transition-transform"><Icons.Pause size={32} /></button>
           ) : (
-            <button onClick={handleStart} className="w-16 h-16 rounded-full bg-orange-500 text-white flex items-center justify-center shadow-lg"><Play size={32} className="ml-1"/></button>
+            <button onClick={handleStart} className="w-16 h-16 rounded-full bg-orange-500 text-white flex items-center justify-center shadow-lg active:scale-90 transition-transform"><Icons.Play size={32} className="ml-1"/></button>
           )}
           {(status === 'running' || status === 'paused') && (
-            <button onClick={handleStop} className="w-14 h-14 rounded-full bg-gray-50 text-gray-400 flex items-center justify-center shadow-md"><Square size={24} /></button>
+            <button onClick={handleStop} className="w-14 h-14 rounded-full bg-gray-50 text-gray-400 flex items-center justify-center shadow-md active:scale-90 transition-transform"><Icons.Stop size={24} /></button>
           )}
         </div>
       </div>
 
-      {/* 历史足迹 */}
       <div className="bg-white rounded-3xl p-5 shadow-sm border border-orange-50">
         <h3 className="font-bold text-gray-800 mb-4 px-2">今天的足迹</h3>
         <div className="space-y-3">
           {logs.length === 0 ? (
-            <div className="text-center py-8 text-gray-300 text-sm font-bold">还没有留下脚印哦</div>
+            <div className="text-center py-8 text-gray-300 text-sm font-bold">还没有留下脚印呢</div>
           ) : (
             logs.map(log => (
               <div key={log.id} className="bg-orange-50/30 p-3 rounded-2xl border border-orange-100 flex justify-between items-center">
@@ -300,7 +311,7 @@ const TimeTracker = ({ logs, onSaveLog, onDeleteLog, tags, onAddTag, onUpdateTag
                   <span className="font-mono text-orange-600 font-bold bg-orange-100 px-2 py-1 rounded-lg text-xs">
                     {Math.floor(log.duration / 60)}m
                   </span>
-                  <button onClick={() => onDeleteLog(log.id)} className="text-gray-300 hover:text-red-500 p-1"><Trash2 size={16} /></button>
+                  <button onClick={() => onDeleteLog(log.id)} className="text-gray-300 hover:text-red-500 transition-colors"><Icons.Trash size={18} /></button>
                 </div>
               </div>
             ))
@@ -308,63 +319,44 @@ const TimeTracker = ({ logs, onSaveLog, onDeleteLog, tags, onAddTag, onUpdateTag
         </div>
       </div>
 
-      {/* 标签管理弹窗 */}
       {showTagDialog && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" onClick={() => setShowTagDialog(false)}></div>
-          <div className="bg-white p-5 w-80 rounded-3xl shadow-2xl relative z-10">
-            <div className="flex justify-between items-center mb-4">
+          <div className="bg-white p-6 w-80 rounded-[2.5rem] shadow-2xl relative z-10 border-4 border-orange-50">
+            <div className="flex justify-between items-center mb-5">
               <h3 className="text-lg font-bold text-gray-800">{dialogMode === 'select' ? '选择标签' : '管理标签'}</h3>
-              <button onClick={() => {
-                setDialogMode(prev => prev === 'select' ? 'edit' : 'select');
-                setEditingOriginalName(null);
-              }} className="p-2 bg-gray-100 rounded-full"><Settings size={16}/></button>
+              <button onClick={() => { setDialogMode(prev => prev === 'select' ? 'edit' : 'select'); setEditingOriginalName(null); }} className="p-2 bg-gray-50 rounded-full text-gray-400"><Icons.Settings size={18}/></button>
             </div>
-            <div className="flex flex-wrap gap-2 mb-4 max-h-40 overflow-y-auto">
+            <div className="flex flex-wrap gap-2 mb-6">
               {tags.map((t, i) => (
-                <button 
-                  key={i} 
-                  onClick={() => {
-                    if(dialogMode === 'select') { setSelectedTag(t); setShowTagDialog(false); }
-                    else { setEditingOriginalName(t.name); setCustomTagInput(t.name); setSelectedColor(t.color); }
-                  }}
-                  className={`px-3 py-1.5 rounded-xl text-sm font-bold border-2 transition-all flex items-center gap-2 ${
-                    selectedTag.name === t.name ? 'border-orange-400 bg-orange-50' : 'border-gray-100'
-                  }`}
-                >
+                <button key={i} onClick={() => {
+                  if(dialogMode === 'select') { setSelectedTag(t); setShowTagDialog(false); }
+                  else { setEditingOriginalName(t.name); setCustomTagInput(t.name); setSelectedColor(t.color); }
+                }} className={`px-4 py-2 rounded-2xl text-sm font-bold border-2 transition-all flex items-center gap-2 ${selectedTag.name === t.name && dialogMode === 'select' ? 'border-orange-400 bg-orange-50 text-orange-600' : 'border-gray-100 bg-white text-gray-600'}`}>
                   <div className="w-2 h-2 rounded-full" style={{backgroundColor: t.color}}></div>
                   {t.name}
                 </button>
               ))}
             </div>
-            <div className="border-t border-dashed pt-4">
-              <div className="flex gap-1 mb-3 overflow-x-auto pb-2">
+            <div className="border-t border-dashed border-gray-100 pt-5">
+              <div className="flex gap-1.5 mb-4 overflow-x-auto pb-1">
                 {COLOR_PALETTE.map(c => (
-                  <button key={c} onClick={() => setSelectedColor(c)} className={`w-6 h-6 rounded-full flex-shrink-0 ${selectedColor === c ? 'ring-2 ring-offset-2 ring-gray-400' : ''}`} style={{backgroundColor: c}} />
+                  <button key={c} onClick={() => setSelectedColor(c)} className={`w-6 h-6 rounded-full flex-shrink-0 transition-transform ${selectedColor === c ? 'scale-125 ring-2 ring-offset-2 ring-gray-200' : ''}`} style={{backgroundColor: c}} />
                 ))}
               </div>
               <div className="flex gap-2">
-                <input 
-                  className="flex-1 bg-gray-50 px-3 py-2 rounded-xl text-sm outline-none border border-gray-100 focus:border-orange-300"
-                  value={customTagInput}
-                  onChange={e => setCustomTagInput(e.target.value)}
-                  placeholder="标签名称"
-                />
-                <button 
-                  onClick={() => {
-                    if(!customTagInput.trim()) return;
-                    if(editingOriginalName) onUpdateTag(editingOriginalName, customTagInput, selectedColor);
-                    else onAddTag({name: customTagInput, color: selectedColor});
-                    setCustomTagInput('');
-                    setEditingOriginalName(null);
-                  }}
-                  className="bg-orange-500 text-white px-4 py-2 rounded-xl font-bold text-sm"
-                >
-                  OK
-                </button>
+                <input className="flex-1 bg-gray-50 px-4 py-2.5 rounded-xl text-sm outline-none border border-gray-100 focus:border-orange-200" value={customTagInput} onChange={e => setCustomTagInput(e.target.value)} placeholder="新标签名..." />
+                <button onClick={() => {
+                  if(!customTagInput.trim()) return;
+                  if(editingOriginalName) onUpdateTag(editingOriginalName, customTagInput.trim(), selectedColor);
+                  else onAddTag({name: customTagInput.trim(), color: selectedColor});
+                  setCustomTagInput(''); setEditingOriginalName(null);
+                }} className="bg-orange-500 text-white px-5 py-2 rounded-xl font-bold text-sm shadow-md">确认</button>
               </div>
+              {dialogMode === 'edit' && editingOriginalName && (
+                <button onClick={() => { onDeleteTag(editingOriginalName); setEditingOriginalName(null); setCustomTagInput(''); }} className="mt-2 w-full text-xs font-bold text-red-300 flex items-center justify-center gap-1"><Icons.Trash size={12}/> 删除当前标签</button>
+              )}
             </div>
-            <button onClick={() => setShowTagDialog(false)} className="w-full mt-4 text-xs font-bold text-gray-300">关闭</button>
           </div>
         </div>
       )}
@@ -372,7 +364,7 @@ const TimeTracker = ({ logs, onSaveLog, onDeleteLog, tags, onAddTag, onUpdateTag
   );
 };
 
-// --- 4. 主程序 App ---
+// --- 5. 主程序 App ---
 export default function App() {
   const [activeTab, setActiveTab] = useState('habits');
   const [todayData, setTodayData] = useState({ water: 0, poop: 0, spine: 0, sleep: 0, impulse: 0, timeLogs: [], impulseRecords: [] });
@@ -433,33 +425,32 @@ export default function App() {
   const appBgClass = (isLateNight && todayData.sleep < 1) ? 'bg-[#1a1a2e]' : 'bg-[#FFFDF5]';
 
   return (
-    <div className={`min-h-screen max-w-md mx-auto relative shadow-2xl overflow-hidden pb-28 transition-colors duration-700 ${appBgClass}`}>
+    <div className={`min-h-screen max-w-md mx-auto relative shadow-2xl overflow-hidden pb-32 transition-colors duration-1000 ${appBgClass}`}>
       
-      <header className="px-6 pt-10 pb-4 text-center">
-        <h1 className={`text-3xl font-bold tracking-tight mb-1 ${isLateNight && todayData.sleep < 1 ? 'text-indigo-300' : 'text-orange-600'}`} style={{fontFamily: 'system-ui'}}>
+      <header className="px-6 pt-12 pb-6 text-center">
+        <h1 className={`text-4xl font-black tracking-tight mb-2 ${isLateNight && todayData.sleep < 1 ? 'text-indigo-300' : 'text-orange-600'}`} style={{fontFamily: 'system-ui, -apple-system, sans-serif'}}>
           Deonysus
         </h1>
-        <div className="inline-block bg-orange-50 px-3 py-1 rounded-full border border-orange-100">
-          <span className="text-[10px] font-bold text-orange-400 tracking-widest uppercase">{currentDateStr}</span>
+        <div className="inline-block bg-orange-100/50 px-4 py-1.5 rounded-full border border-orange-200/50">
+          <span className="text-[10px] font-black text-orange-500 tracking-[0.3em] uppercase">{currentDateStr}</span>
         </div>
       </header>
 
       <main className="px-5">
         {activeTab === 'habits' ? (
-          <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-500">
-            {/* 问候语 */}
-            <div className={`p-4 rounded-3xl border-2 border-dashed relative transform ${
-              (isLateNight && todayData.sleep < 1) ? 'bg-indigo-900/30 border-indigo-400/30' : 'bg-orange-50/50 border-orange-200/50'
+          <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className={`p-5 rounded-[2rem] border-2 border-dashed relative transform ${
+              (isLateNight && todayData.sleep < 1) ? 'bg-indigo-900/30 border-indigo-400/30 text-indigo-100' : 'bg-orange-50/50 border-orange-200/50 text-gray-600'
             }`}>
               {(isLateNight && todayData.sleep < 1) ? (
                 <>
-                  <p className="text-sm font-bold text-indigo-300 mb-1 flex items-center gap-2"><Moon size={16} /> 夜深了，小姑娘。</p>
-                  <p className="text-xs text-indigo-100/70 leading-relaxed">“该休息了。把烦恼都留给我，被窝里只有温暖。点亮‘睡前锚点’吧。”</p>
+                  <p className="text-sm font-bold text-indigo-300 mb-2 flex items-center gap-2"><Icons.Moon size={18}/> 夜深了，小姑娘。</p>
+                  <p className="text-xs leading-relaxed opacity-80">“该休息了。把烦恼都留给我，被窝里只有温暖和我。快点亮‘睡前锚点’吧。”</p>
                 </>
               ) : (
                 <>
-                  <p className="text-sm font-bold text-orange-600 mb-1">“我的小姑娘，这里是你的港湾。”</p>
-                  <p className="text-xs text-gray-500 leading-relaxed">“不要再咬指甲了，我会一直守着你。你无需强大，有我在。”</p>
+                  <p className="text-sm font-bold text-orange-600 mb-2">“我的小姑娘，这里是你的港湾。”</p>
+                  <p className="text-xs leading-relaxed opacity-80">“不要再用指甲磨砺自己，我会用双手的爱意替你磨平所有的烦躁。你无需强大，有我在。”</p>
                 </>
               )}
             </div>
@@ -476,81 +467,55 @@ export default function App() {
               ))}
             </div>
 
-            {/* 冲动记录 */}
-            <div className="bg-white rounded-3xl p-5 shadow-sm border-4 border-pink-50 mt-6">
-              <div className="flex justify-between items-center mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-pink-100 flex items-center justify-center text-pink-500"><Brain size={24}/></div>
+            <div className="bg-white rounded-[2.5rem] p-6 shadow-sm border-4 border-pink-50 mt-8 group active:scale-[0.98] transition-all">
+              <div className="flex justify-between items-center mb-5">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-pink-100 flex items-center justify-center text-pink-500 shadow-inner shadow-pink-200/50"><Icons.Moon size={28}/></div>
                   <div>
-                    <h3 className="font-bold text-gray-800">冲动觉察</h3>
-                    <p className="text-[10px] text-gray-400 font-bold">感知、停顿、记录</p>
+                    <h3 className="font-bold text-gray-800 text-lg">冲动觉察</h3>
+                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Awareness & Pause</p>
                   </div>
                 </div>
-                <div className="text-4xl font-bold text-pink-500 font-mono">{todayData.impulse || 0}</div>
+                <div className="text-5xl font-black text-pink-500 font-mono tracking-tighter tabular-nums">{todayData.impulse || 0}</div>
               </div>
-              <button 
-                onClick={() => setShowImpulseModal(true)} 
-                className="w-full bg-pink-500 text-white py-3 rounded-2xl font-bold shadow-lg shadow-pink-100 active:scale-95 transition-all"
-              >
-                记录一次停顿
+              <button onClick={() => setShowImpulseModal(true)} className="w-full bg-pink-500 text-white py-4 rounded-2xl font-bold shadow-lg shadow-pink-200 active:translate-y-1 active:shadow-none transition-all">
+                记录一次觉察与停顿
               </button>
+            </div>
+            
+            <div className="flex gap-4 mt-8 pb-4">
+               <button onClick={() => setToastMsg("正在生成报告...")} className="flex-1 py-3.5 bg-orange-100/50 text-orange-600 rounded-2xl font-bold text-xs flex items-center justify-center gap-2"><Icons.Chart size={16}/> 守护报告</button>
+               <button onClick={() => { if(confirm("要新开一页吗？")) setTodayData({water:0,poop:0,spine:0,sleep:0,impulse:0,timeLogs:[],impulseRecords:[]}); }} className="flex-1 py-3.5 bg-gray-50 text-gray-400 rounded-2xl font-bold text-xs flex items-center justify-center gap-2"><Icons.Refresh size={16}/> 今日重置</button>
             </div>
           </div>
         ) : (
-          <div className="animate-in fade-in duration-500">
-            <TimeTracker 
-              logs={todayData.timeLogs || []} 
-              onSaveLog={addTimeLog}
-              onDeleteLog={deleteTimeLog}
-              tags={settings.tags}
-              onAddTag={(tag) => {
-                const newSettings = { ...settings, tags: [...settings.tags, tag] };
-                setSettings(newSettings); LocalDB.saveSettings(newSettings);
-              }}
-              onUpdateTag={(old, name, color) => {
-                const newTags = settings.tags.map(t => t.name === old ? {name, color} : t);
-                const newSettings = { ...settings, tags: newTags };
-                setSettings(newSettings); LocalDB.saveSettings(newSettings);
-              }}
-              onDeleteTag={(name) => {
-                const newSettings = { ...settings, tags: settings.tags.filter(t => t.name !== name) };
-                setSettings(newSettings); LocalDB.saveSettings(newSettings);
-              }}
-            />
-          </div>
+          <TimeTracker 
+            logs={todayData.timeLogs || []} 
+            onSaveLog={addTimeLog}
+            onDeleteLog={deleteTimeLog}
+            tags={settings.tags}
+            onAddTag={(tag) => { const n = { ...settings, tags: [...settings.tags, tag] }; setSettings(n); localStorage.setItem(SETTINGS_KEY, JSON.stringify(n)); }}
+            onUpdateTag={(old, name, color) => { const n = { ...settings, tags: settings.tags.map(t => t.name === old ? {name, color} : t) }; setSettings(n); localStorage.setItem(SETTINGS_KEY, JSON.stringify(n)); }}
+            onDeleteTag={(name) => { const n = { ...settings, tags: settings.tags.filter(t => t.name !== name) }; setSettings(n); localStorage.setItem(SETTINGS_KEY, JSON.stringify(n)); }}
+          />
         )}
       </main>
 
-      {/* 底部导航 */}
-      <nav className={`fixed bottom-0 left-0 right-0 backdrop-blur-md border-t border-orange-100 flex justify-around items-center pb-6 pt-2 z-40 max-w-md mx-auto rounded-t-[40px] shadow-2xl transition-colors ${
-        (isLateNight && todayData.sleep < 1) ? 'bg-indigo-950/80 border-indigo-800' : 'bg-white/90 border-orange-100'
+      <nav className={`fixed bottom-0 left-0 right-0 backdrop-blur-xl border-t border-orange-100 flex justify-around items-center pb-10 pt-4 z-40 max-w-md mx-auto rounded-t-[3rem] shadow-[0_-10px_40px_rgba(0,0,0,0.05)] transition-colors ${
+        (isLateNight && todayData.sleep < 1) ? 'bg-indigo-950/90 border-indigo-800' : 'bg-white/95 border-orange-100'
       }`}>
-        <button onClick={() => setActiveTab('habits')} className={`flex flex-col items-center justify-center w-full py-2 ${activeTab === 'habits' ? 'text-orange-500' : 'text-gray-300'}`}>
-          <Home size={24} className={activeTab === 'habits' ? 'animate-bounce' : ''}/>
-          <span className="text-[10px] font-bold mt-1">守护</span>
+        <button onClick={() => setActiveTab('habits')} className={`flex flex-col items-center justify-center w-full transition-all ${activeTab === 'habits' ? 'text-orange-600 scale-110' : 'text-gray-300'}`}>
+          <div className={`p-2 rounded-2xl transition-all ${activeTab === 'habits' ? 'bg-orange-100/50' : ''}`}><Icons.Home size={26}/></div>
+          <span className="text-[10px] font-black mt-1 uppercase tracking-widest">Habit</span>
         </button>
-        <button onClick={() => setActiveTab('time')} className={`flex flex-col items-center justify-center w-full py-2 ${activeTab === 'time' ? 'text-orange-500' : 'text-gray-300'}`}>
-          <Clock size={24} className={activeTab === 'time' ? 'animate-bounce' : ''}/>
-          <span className="text-[10px] font-bold mt-1">专注</span>
+        <button onClick={() => setActiveTab('time')} className={`flex flex-col items-center justify-center w-full transition-all ${activeTab === 'time' ? 'text-orange-600 scale-110' : 'text-gray-300'}`}>
+          <div className={`p-2 rounded-2xl transition-all ${activeTab === 'time' ? 'bg-orange-100/50' : ''}`}><Icons.Clock size={26}/></div>
+          <span className="text-[10px] font-black mt-1 uppercase tracking-widest">Focus</span>
         </button>
       </nav>
 
-      {showImpulseModal && (
-        <ImpulseModal 
-          onClose={() => setShowImpulseModal(false)} 
-          onConfirm={(note) => {
-            updateHabit('impulse', 1, { note });
-            setShowImpulseModal(false);
-            setToastMsg(note ? "我也听到了。" : "觉察已记录");
-          }} 
-        />
-      )}
-      
-      {toastMsg && (
-        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white px-6 py-2 rounded-full text-xs font-bold animate-in fade-in slide-in-from-bottom-4 duration-300">
-          {toastMsg}
-        </div>
-      )}
+      {showImpulseModal && <ImpulseModal onClose={() => setShowImpulseModal(false)} onConfirm={(n) => { updateHabit('impulse', 1, { note: n }); setShowImpulseModal(false); setToastMsg(n ? "我也听到了。" : "已记录。"); }} />}
+      {toastMsg && <div className="fixed bottom-28 left-1/2 -translate-x-1/2 z-50 bg-gray-900/90 text-white px-8 py-3 rounded-full text-xs font-bold animate-in fade-in slide-in-from-bottom-4 duration-300 shadow-xl">{toastMsg}</div>}
     </div>
   );
 }
