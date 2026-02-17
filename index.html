@@ -16,7 +16,7 @@
             height: 100%;
             overflow: hidden;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #000;
+            background-color: #000; /* 默认纯黑，防止白屏闪烁 */
             -webkit-touch-callout: none;
             -webkit-user-select: none;
         }
@@ -26,19 +26,23 @@
             position: relative;
             width: 100%;
             height: 100%;
-            /* 优先加载同目录下的 wallpaper.jpg */
-            background: url('wallpaper.jpg'), url('https://images.unsplash.com/photo-1513151233558-d860c5398176?q=80&w=1000&auto=format&fit=crop');
             background-repeat: no-repeat;
             background-position: center center;
             background-size: cover;
             display: flex;
             flex-direction: column;
+            transition: opacity 0.5s ease-in-out;
+            opacity: 0; /* 初始隐藏，等壁纸准备好再显示 */
+        }
+
+        .phone-screen.loaded {
+            opacity: 1;
         }
 
         .glass-overlay {
             position: absolute;
             inset: 0;
-            background: linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, transparent 20%, transparent 80%, rgba(0,0,0,0.1) 100%);
+            background: linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, transparent 20%, transparent 80%, rgba(0,0,0,0.3) 100%);
             z-index: 1;
         }
 
@@ -62,6 +66,7 @@
             color: white;
             font-size: 15px;
             font-weight: 600;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
         }
 
         /* 图标网格排列 */
@@ -154,6 +159,10 @@
     <script>
         // --- 配置部分 ---
         const CONFIG = {
+            // 壁纸路径：优先使用本地 wallpaper.jpg，不设置则使用网络备份
+            wallpaper: "wallpaper.jpg",
+            fallbackWallpaper: "https://images.unsplash.com/photo-1513151233558-d860c5398176?q=80&w=1000&auto=format&fit=crop",
+
             // PWA 整体的图标（安装到桌面显示的那个）
             pwaIcon: "app-icon.png", 
             
@@ -208,7 +217,24 @@
             return wrapper;
         }
 
-        function init() {
+        async function initWallpaper() {
+            const screen = document.getElementById('main-screen');
+            const img = new Image();
+            
+            // 尝试加载本地壁纸
+            img.src = CONFIG.wallpaper;
+            img.onload = () => {
+                screen.style.backgroundImage = `url('${CONFIG.wallpaper}')`;
+                screen.classList.add('loaded');
+            };
+            img.onerror = () => {
+                // 如果本地失败，加载备份壁纸
+                screen.style.backgroundImage = `url('${CONFIG.fallbackWallpaper}')`;
+                screen.classList.add('loaded');
+            };
+        }
+
+        function initIcons() {
             const mainGrid = document.getElementById('main-grid');
             CONFIG.apps.forEach(app => mainGrid.appendChild(createIconElement(app)));
             lucide.createIcons();
@@ -225,7 +251,7 @@
             navigator.serviceWorker.register(URL.createObjectURL(blob));
         }
 
-        // 动态生成的 Manifest，现在它会使用 CONFIG.pwaIcon
+        // 动态生成的 Manifest
         const manifest = {
             "name": "Deonysus Project Hub",
             "short_name": "Hub",
@@ -251,9 +277,10 @@
         manifestLink.href = URL.createObjectURL(new Blob([JSON.stringify(manifest)], {type: 'application/json'}));
         document.head.appendChild(manifestLink);
 
-        window.onload = init;
+        window.onload = () => {
+            initWallpaper();
+            initIcons();
+        };
     </script>
 </body>
-
 </html>
-
